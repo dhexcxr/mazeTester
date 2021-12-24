@@ -1,17 +1,15 @@
-// ver 1.1
-// with working random mazes, with some code cleanup
+// ver 1.5
+// with working random size mazes
 
 // create a maze in a Graph data structure, iterate through it to find
 // the path to the exit, and display the results
 //
 // TODO ensure we find the most efficient route by comparing multiple paths to one exit
-//	add functionality to generate maze of arbitrary size
 
 package mazeTester;
 
 import static java.lang.System.out;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -30,20 +28,17 @@ class GraphNode {
 		return ((Integer) id).toString();
 	}
 }
-
+//
 class Maze {
 
 	List<GraphNode> mazeNodes = new ArrayList<>();
-	List<Integer> validEntryAndExit = new ArrayList<Integer>(Arrays.asList(0, 1, 2, 3, 4, 5, 9, 10, 14, 15, 16, 17, 18, 19));
-	// make some method variables here to define maze width and height
-	// for to make arbitrary sized mazes, like REAL big ones :-D
-	int mazeWidth = 0;
-	int mazeHeight = 0;
+	List<Integer> exits = new ArrayList<>();
+
+	int mazeWidth = 5;
+	int mazeHeight = 4;
 
 	public Maze() {
-		mazeWidth = 5;
-		mazeHeight = 4;
-		
+
 		// construct a maze with some defaults
 		for(int i = 0; i < mazeWidth * mazeHeight; i++) {
 			mazeNodes.add(new GraphNode(i + 1));
@@ -77,48 +72,54 @@ class Maze {
 
 	public Maze(long seed) {
 		
-		// defaults for testing
-		mazeWidth = 5;
-		mazeHeight = 4;
-		
-		// construct a maze with random entries and exits
-		final int MAX_NUMBER_OF_EXITS = 3;
-		for(int i = 0; i < 20; i++) {
-			mazeNodes.add(new GraphNode(i + 1));
-		}
-
 		Random random = new Random();
 		random.setSeed(seed);
+		
+		// set random maze size, between 4-10 cells per side
+		final int MAX_SIZE_OF_MAZE_SIDE = 10;
+		final int MIN_SIZE_OF_MAZE_SIDE = 4;
+		mazeWidth = random.nextInt(MAX_SIZE_OF_MAZE_SIDE - MIN_SIZE_OF_MAZE_SIDE + 1) + MIN_SIZE_OF_MAZE_SIDE;
+		mazeHeight = random.nextInt(MAX_SIZE_OF_MAZE_SIDE - MIN_SIZE_OF_MAZE_SIDE + 1) + MIN_SIZE_OF_MAZE_SIDE;
 
+		List<Integer> validEntryAndExit = getValidEntriesAndExitCells();
+
+		// construct maze out of GraphNodes
+		for(int i = 0; i < mazeWidth * mazeHeight; i++) {
+			mazeNodes.add(new GraphNode(i + 1));
+		}
+		
+		// choose random entries and exits
+		final int MAX_NUMBER_OF_EXITS = 3;
 		int numOfExits = random.nextInt(MAX_NUMBER_OF_EXITS);
-
-		// set random entry
-		int entry = random.nextInt(validEntryAndExit.size() - 1);
+		
+		int entry = random.nextInt(validEntryAndExit.size());
 		mazeNodes.get(validEntryAndExit.get(entry)).isEntry = true;
 
-		// set random exits
 		for(int i = 0; i <= numOfExits; i++) {
-			int exit = random.nextInt(validEntryAndExit.size() - 1);
+			int exit = random.nextInt(validEntryAndExit.size());
 			while(mazeNodes.get(validEntryAndExit.get(exit)).isEntry)
-				exit = random.nextInt(validEntryAndExit.size() - 1);
-			mazeNodes.get(validEntryAndExit.get(exit)).isExit = true;
+				exit = random.nextInt(validEntryAndExit.size());
+			GraphNode exitNode = mazeNodes.get(validEntryAndExit.get(exit)); 
+			exitNode.isExit = true;
+			// add exits to list of exits
+			exits.add(exitNode.id);
 		}
-
-		// randomly connect 20 nodes to create the maze
-		for(int i = 0; i < 20; i++) {
+		
+		// randomly connect a number of nodes to create the maze
+		for(int i = 0; i < mazeWidth * mazeHeight; i++) {
 			final byte CONNECT_UP = 0b0001;
 			final byte CONNECT_DOWN = 0b0010;
 			final byte CONNECT_LEFT = 0b0100;
 			final byte CONNECT_RIGHT = 0b1000;
 			final int CONNECTION_VARIATIONS = 16;
 
-			int nodeToConnect = random.nextInt(mazeNodes.size())+1;		// random 1-20
+			int nodeToConnect = random.nextInt(mazeNodes.size())+1;
 			int childrenMask = random.nextInt(CONNECTION_VARIATIONS);		// random 0-15
 
-			boolean isTop = nodeToConnect >= 1 && nodeToConnect <=5;
-			boolean isBottom = nodeToConnect >= 16 && nodeToConnect <=20;
-			boolean isLeft = nodeToConnect == 1 || nodeToConnect == 6 || nodeToConnect == 11 || nodeToConnect == 16;
-			boolean isRight = 	nodeToConnect == 5 || nodeToConnect == 10 || nodeToConnect == 15 || nodeToConnect == 20;
+			boolean isTop = nodeToConnect >= 1 && nodeToConnect <= mazeWidth;
+			boolean isBottom = nodeToConnect >= mazeWidth * mazeHeight - mazeWidth + 1 && nodeToConnect <= mazeWidth * mazeHeight;
+			boolean isLeft = nodeToConnect % mazeWidth - 1 == 0;
+			boolean isRight = 	nodeToConnect % mazeWidth == 0;
 
 			// if nodeToConnect is in outer edge of maze
 			// don't try to connect to a cell that is out of bounds
@@ -133,27 +134,56 @@ class Maze {
 
 			// test childMask settings and run connect functions
 			if((childrenMask & CONNECT_UP) == CONNECT_UP)
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect - mazeWidth);
 			if((childrenMask & CONNECT_DOWN) == CONNECT_DOWN)
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + mazeWidth);
 			if((childrenMask & CONNECT_LEFT) == CONNECT_LEFT)
 				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
 			if((childrenMask & CONNECT_RIGHT) == CONNECT_RIGHT)
 				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
 		}
 	}
+	
+	private List<Integer>getValidEntriesAndExitCells() {
+		// find the cells that line the outside of the maze
+		List<Integer> validEntryAndExit = new ArrayList<>();
+		for(int i = 0; i < mazeWidth; i++ )
+			validEntryAndExit.add(i);
+		for(int i = mazeWidth, rEdge = 0; i <= mazeWidth * mazeHeight - mazeWidth;) {
+			validEntryAndExit.add(i);
+			if(rEdge == 0) {
+				i += mazeWidth - 1;
+				rEdge = 1;
+			}			
+			else if(rEdge == 1) {
+				i += 1;
+				rEdge = 0;
+			}
+		}
+		for(int i = mazeWidth * mazeHeight - mazeWidth + 1; i < mazeWidth * mazeHeight; i++ )
+			validEntryAndExit.add(i);
+		
+		return validEntryAndExit;
+	}
 
 	public void print() {
 
 		final int BEGGINNING_OF_FIRST_LINE = 0;
-		final int END_OF_FIRST_LINE = 4;
-		final int BEGGINNING_OF_LAST_LINE = this.mazeNodes.size()-5;
-		final int END_OF_LAST_LINE = this.mazeNodes.size()-1;
-		final String LEFT_JUSTIFY ="    ";
+		final int END_OF_FIRST_LINE = mazeWidth - 1;
+		final int BEGGINNING_OF_LAST_LINE = this.mazeNodes.size() - mazeWidth;
+		final int END_OF_LAST_LINE = this.mazeNodes.size() - 1;
+		final String LEFT_JUSTIFY ="     ";
 
 		out.println("   E is maze entry.\n   X are maze exits.");
 
-		out.println("Cell 1  2  3  4  5");
+		// print cell index above maze
+		out.print("Cell  ");
+		for(int i = 1; i <= mazeWidth; i++)
+			if(i < 10)
+				out.print(i + "  ");
+			else if(i >=10 && i < 100)
+				out.print(i + " ");
+		out.println();
 
 		// correct spacing of maze from left edge
 		out.print(LEFT_JUSTIFY);
@@ -173,56 +203,59 @@ class Maze {
 		for(GraphNode node : this.mazeNodes) {
 
 			// print cell numbers down left side of maze
-			if(node.id == 1 || node.id == 6)
-				out.print(node.id + " ");
-			else if(node.id == 11 || node.id == 16)
-				out.print(node.id);
+			if(node.id % mazeWidth - 1 == 0)
+				if(node.id < 10)
+					out.print(node.id + "  ");
+				else if(node.id >= 10 && node.id < 100)
+					out.print(node.id + " ");
+				else if(node.id >= 100)
+					out.print(node.id);
 
-			boolean isLastRow = node.id >= 16 && node.id <= 20;
-			boolean isEntryOrExit = node.isEntry || node.isExit;
-			boolean isLeftOuterEdge = node.id == 6 || node.id == 11;
-
-			boolean downChild = false;
-			boolean leftChild = false;
-
+			boolean isLeftInnerCell = node.id % mazeWidth - 1 == 0 && node.id != 1 && node.id != mazeWidth * mazeHeight - mazeWidth + 1;
+			
 			// print entry or exit indicator for left edge of maze			
-			if(node.isEntry && isLeftOuterEdge)
+			if(node.isEntry && isLeftInnerCell)
 				out.print(" E");
-			else if(node.isExit && isLeftOuterEdge)
+			else if(node.isExit && isLeftInnerCell)
 				out.print(" X");
-			else if(node.id == 1 || isLeftOuterEdge || node.id == 16)
+			else if(node.id == 1 || isLeftInnerCell || node.id == mazeWidth * mazeHeight - mazeWidth + 1)
 				out.print("  ");
 
+			boolean isLastRow = node.id >= mazeWidth * mazeHeight - mazeWidth + 1 && node.id <= mazeWidth * mazeHeight;
+//			boolean isEntryOrExit = node.isEntry || node.isExit;
+			boolean hasDownChild = false;
+			boolean hasLeftChild = false;
+			
 			// set which walls to draw
 			for(GraphNode child : node.children) {
-				if(child.id == node.id + 5 || isLastRow  && isEntryOrExit)
-					downChild = true;
-				if(child.id == node.id - 1 || isLeftOuterEdge && isEntryOrExit)
-					leftChild = true;
+				if(child.id == node.id + mazeWidth || isLastRow  && (node.isEntry || node.isExit))
+					hasDownChild = true;
+				if(child.id == node.id - 1 || isLeftInnerCell && (node.isEntry || node.isExit))
+					hasLeftChild = true;
 			}
 
 			// print the cell with it's walls
-			if(downChild && leftChild)
+			if(hasDownChild && hasLeftChild)
 				out.print("   ");
-			else if(!downChild && leftChild)
+			else if(!hasDownChild && hasLeftChild)
 				out.print("___");
-			else if(downChild && !leftChild)
+			else if(hasDownChild && !hasLeftChild)
 				out.print("|  ");
-			else if(!downChild && !leftChild)
+			else if(!hasDownChild && !hasLeftChild)
 				out.print("|__");
 
 			// print entry or exit indicator for right edge of maze
-			if(node.isEntry && (node.id == 10 || node.id == 15))
+			if(node.isEntry && (node.id != mazeWidth && node.id % mazeWidth == 0 && node.id != mazeWidth * mazeHeight))
 				out.println(" E ");
-			else if(node.isExit && (node.id == 10 || node.id == 15))
+			else if(node.isExit && (node.id != mazeWidth && node.id % mazeWidth == 0 && node.id != mazeWidth * mazeHeight))
 				out.println(" X ");
-			else if(node.id == 5 || node.id == 10 || node.id == 15 || node.id == 20)
+			else if(node.id % mazeWidth == 0)
 				out.println("|");
 		}
 
 		// correct spacing from left edge
 		out.print(LEFT_JUSTIFY);
-		
+
 		// print entry and exits for last line
 		for(int i = BEGGINNING_OF_LAST_LINE; i <= END_OF_LAST_LINE; i++) {
 			if(this.mazeNodes.get(i).isEntry)
@@ -255,12 +288,11 @@ class Maze {
 				mazeEntry = node;
 
 		findExits(mazeEntry, visitedGraphNodes, pathToExit, allPaths);
+		
 		return allPaths;
 	}
 
 	private void findExits(GraphNode node, List<GraphNode> visitedGraphNodes, List<GraphNode> pathToExit, List<List<GraphNode>> allPaths) {
-		// TODO add ArrayList<ArrayList<GraphNode> pathsToThisExit here, track when an exit is found
-		// and devise a way to find all paths to it, then compare and only save shortest path
 		
 		// recurse through maze starting at node
 		visitedGraphNodes.add(node);
@@ -290,6 +322,7 @@ public class MazeTester {
 
 		out.println("Randomized maze:");
 		Maze randomMaze = new Maze(java.lang.System.currentTimeMillis());
+//		Maze randomMaze = new Maze(1636591473033l);
 		randomMaze.print();
 		printResults(randomMaze.solve());
 	}
@@ -302,6 +335,7 @@ public class MazeTester {
 				out.print("Path to exit: ");
 				for(GraphNode pathNode : path)
 					out.print(pathNode.id + " ");
+								
 				out.println();
 			}
 		}
