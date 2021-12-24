@@ -1,3 +1,6 @@
+//ver 0.9
+// with random entrances and exits in stock maze from book
+
 package mazeTester;
 
 import static java.lang.System.out;
