@@ -1,5 +1,11 @@
-// ver 1.0
-// with working random mazes
+// ver 1.1
+// with working random mazes, with some code cleanup
+
+// create a maze in a Graph data structure, iterate through it to find
+// the path to the exit, and display the results
+//
+// TODO ensure we find the most efficient route by comparing multiple paths to one exit
+//	add functionality to generate maze of arbitrary size
 
 package mazeTester;
 
@@ -29,10 +35,17 @@ class Maze {
 
 	List<GraphNode> mazeNodes = new ArrayList<>();
 	List<Integer> validEntryAndExit = new ArrayList<Integer>(Arrays.asList(0, 1, 2, 3, 4, 5, 9, 10, 14, 15, 16, 17, 18, 19));
+	// make some method variables here to define maze width and height
+	// for to make arbitrary sized mazes, like REAL big ones :-D
+	int mazeWidth = 0;
+	int mazeHeight = 0;
 
 	public Maze() {
+		mazeWidth = 5;
+		mazeHeight = 4;
+		
 		// construct a maze with some defaults
-		for(int i = 0; i < 20; i++) {
+		for(int i = 0; i < mazeWidth * mazeHeight; i++) {
 			mazeNodes.add(new GraphNode(i + 1));
 		}
 
@@ -63,6 +76,11 @@ class Maze {
 	}
 
 	public Maze(long seed) {
+		
+		// defaults for testing
+		mazeWidth = 5;
+		mazeHeight = 4;
+		
 		// construct a maze with random entries and exits
 		final int MAX_NUMBER_OF_EXITS = 3;
 		for(int i = 0; i < 20; i++) {
@@ -167,12 +185,12 @@ class Maze {
 			boolean downChild = false;
 			boolean leftChild = false;
 
-			// draw left edge of maze			
-			if(node.isEntry && (node.id == 6 || node.id == 11))
+			// print entry or exit indicator for left edge of maze			
+			if(node.isEntry && isLeftOuterEdge)
 				out.print(" E");
-			else if(node.isExit && (node.id == 6 || node.id == 11))
+			else if(node.isExit && isLeftOuterEdge)
 				out.print(" X");
-			else if(node.id == 1 || node.id == 6 || node.id == 11 || node.id == 16)
+			else if(node.id == 1 || isLeftOuterEdge || node.id == 16)
 				out.print("  ");
 
 			// set which walls to draw
@@ -193,7 +211,7 @@ class Maze {
 			else if(!downChild && !leftChild)
 				out.print("|__");
 
-			// draw right edge of maze
+			// print entry or exit indicator for right edge of maze
 			if(node.isEntry && (node.id == 10 || node.id == 15))
 				out.println(" E ");
 			else if(node.isExit && (node.id == 10 || node.id == 15))
@@ -241,6 +259,9 @@ class Maze {
 	}
 
 	private void findExits(GraphNode node, List<GraphNode> visitedGraphNodes, List<GraphNode> pathToExit, List<List<GraphNode>> allPaths) {
+		// TODO add ArrayList<ArrayList<GraphNode> pathsToThisExit here, track when an exit is found
+		// and devise a way to find all paths to it, then compare and only save shortest path
+		
 		// recurse through maze starting at node
 		visitedGraphNodes.add(node);
 		pathToExit.add(node);
