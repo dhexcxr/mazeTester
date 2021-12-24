@@ -1,5 +1,5 @@
-//ver 0.99
-// with random mazes, but no ui
+// ver 1.0
+// with working random mazes
 
 package mazeTester;
 
@@ -8,9 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-
-//TODO make Maze class that creates random 20 cell mazes
-//make solve method a member of maze class
 
 class GraphNode {
 	int id;
@@ -33,15 +30,15 @@ class Maze {
 	List<GraphNode> mazeNodes = new ArrayList<>();
 	List<Integer> validEntryAndExit = new ArrayList<Integer>(Arrays.asList(0, 1, 2, 3, 4, 5, 9, 10, 14, 15, 16, 17, 18, 19));
 
-
 	public Maze() {
+		// construct a maze with some defaults
 		for(int i = 0; i < 20; i++) {
 			mazeNodes.add(new GraphNode(i + 1));
 		}
 
 		mazeNodes.get(2).isEntry = true;
 		mazeNodes.get(15).isExit = true;
-		mazeNodes.get(9).isExit = true;
+		mazeNodes.get(10).isExit = true;
 
 		connect(mazeNodes, 1, 2);
 		connect(mazeNodes, 2, 3);
@@ -67,7 +64,6 @@ class Maze {
 
 	public Maze(long seed) {
 		// construct a maze with random entries and exits
-
 		final int MAX_NUMBER_OF_EXITS = 3;
 		for(int i = 0; i < 20; i++) {
 			mazeNodes.add(new GraphNode(i + 1));
@@ -76,292 +72,189 @@ class Maze {
 		Random random = new Random();
 		random.setSeed(seed);
 
-		int numOfExits = random.nextInt(MAX_NUMBER_OF_EXITS)+1;
+		int numOfExits = random.nextInt(MAX_NUMBER_OF_EXITS);
 
 		// set random entry
 		int entry = random.nextInt(validEntryAndExit.size() - 1);
 		mazeNodes.get(validEntryAndExit.get(entry)).isEntry = true;
 
-		// set random exit
-		for(int i = 0; i < numOfExits; i++) {
+		// set random exits
+		for(int i = 0; i <= numOfExits; i++) {
 			int exit = random.nextInt(validEntryAndExit.size() - 1);
 			while(mazeNodes.get(validEntryAndExit.get(exit)).isEntry)
 				exit = random.nextInt(validEntryAndExit.size() - 1);
 			mazeNodes.get(validEntryAndExit.get(exit)).isExit = true;
 		}
-		
+
+		// randomly connect 20 nodes to create the maze
 		for(int i = 0; i < 20; i++) {
-			final int CHILDREN_VARIATIONS = 16;
+			final byte CONNECT_UP = 0b0001;
+			final byte CONNECT_DOWN = 0b0010;
+			final byte CONNECT_LEFT = 0b0100;
+			final byte CONNECT_RIGHT = 0b1000;
+			final int CONNECTION_VARIATIONS = 16;
+
 			int nodeToConnect = random.nextInt(mazeNodes.size())+1;		// random 1-20
-			int childrenMask = random.nextInt(CHILDREN_VARIATIONS);		// 0-15
+			int childrenMask = random.nextInt(CONNECTION_VARIATIONS);		// random 0-15
+
 			boolean isTop = nodeToConnect >= 1 && nodeToConnect <=5;
 			boolean isBottom = nodeToConnect >= 16 && nodeToConnect <=20;
 			boolean isLeft = nodeToConnect == 1 || nodeToConnect == 6 || nodeToConnect == 11 || nodeToConnect == 16;
 			boolean isRight = 	nodeToConnect == 5 || nodeToConnect == 10 || nodeToConnect == 15 || nodeToConnect == 20;
-			
+
+			// if nodeToConnect is in outer edge of maze
+			// don't try to connect to a cell that is out of bounds
 			if(isTop)
-				childrenMask = childrenMask & 14;
+				childrenMask = childrenMask & ~CONNECT_UP;
 			if(isBottom)
-				childrenMask = childrenMask & 13;
+				childrenMask = childrenMask & ~CONNECT_DOWN;
 			if(isLeft)
-				childrenMask = childrenMask & 11;
+				childrenMask = childrenMask & ~CONNECT_LEFT;
 			if(isRight)
-				childrenMask = childrenMask & 7;
-			
-			switch (childrenMask) {
-			case 0:
-				break;
-			case 1:
+				childrenMask = childrenMask & ~CONNECT_RIGHT;
+
+			// test childMask settings and run connect functions
+			if((childrenMask & CONNECT_UP) == CONNECT_UP)
 				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
-				break;
-			case 2:
+			if((childrenMask & CONNECT_DOWN) == CONNECT_DOWN)
 				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
-				break;
-			case 3:
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
-				break;
-			case 4:
+			if((childrenMask & CONNECT_LEFT) == CONNECT_LEFT)
 				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
-				break;
-			case 5:
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
-				break;
-			case 6:
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
-				break;
-			case 7:
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
-				break;
-			case 8:
+			if((childrenMask & CONNECT_RIGHT) == CONNECT_RIGHT)
 				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
-				break;
-			case 9:
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
-				break;
-			case 10:
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
-				break;
-			case 11:
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
-				break;
-			case 12:
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
-				break;
-			case 13:
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
-				break;
-			case 14:
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
-				break;
-			case 15:
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
-				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
-				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
-				break;
-			default:
-				throw new IllegalArgumentException("Unexpected value: " + childrenMask);
-			}
 		}
-
-//		connect(mazeNodes, 1, 2);
-//		connect(mazeNodes, 2, 3);
-//		connect(mazeNodes, 3, 4);
-//		connect(mazeNodes, 4, 5);
-//		connect(mazeNodes, 1, 6);
-//		connect(mazeNodes, 3, 8);
-//		connect(mazeNodes, 4, 9);
-//		connect(mazeNodes, 7, 8);
-//		connect(mazeNodes, 6, 11);
-//		connect(mazeNodes, 7, 12);
-//		connect(mazeNodes, 9, 14);
-//		connect(mazeNodes, 10, 15);
-//		connect(mazeNodes, 11, 12);
-//		connect(mazeNodes, 14, 15);
-//		connect(mazeNodes, 13, 18);
-//		connect(mazeNodes, 15, 20);
-//		connect(mazeNodes, 16, 17);
-//		connect(mazeNodes, 17, 18);
-//		connect(mazeNodes, 18, 19);
-//		connect(mazeNodes, 19, 20);
-
 	}
 
 	public void print() {
-	
-//ENTRY and EXIT INDICATOR
-//		out.println("E is maze entry.\nX is maze exit.");
-//		out.print(" 1  2  3  4  5\n");
-//ENTRY and EXIT INDICATOR
-		
-		for(int i = 0; i < 5; i++) {
-			//			boolean isFirstRow = (this.mazeNodes.get(i).id >= 1 || this.mazeNodes.get(i).id <= 5);
-			boolean isEntryOrExit = this.mazeNodes.get(i).isEntry || this.mazeNodes.get(i).isExit;
-			//			boolean isOuterEdge = (this.mazeNodes.get(i).id == 6 || this.mazeNodes.get(i).id == 10 ||
-			//					this.mazeNodes.get(i).id == 11 || this.mazeNodes.get(i).id == 15); 
 
-			if(isEntryOrExit)
-				out.print("   ");
+		final int BEGGINNING_OF_FIRST_LINE = 0;
+		final int END_OF_FIRST_LINE = 4;
+		final int BEGGINNING_OF_LAST_LINE = this.mazeNodes.size()-5;
+		final int END_OF_LAST_LINE = this.mazeNodes.size()-1;
+		final String LEFT_JUSTIFY ="    ";
+
+		out.println("   E is maze entry.\n   X are maze exits.");
+
+		out.println("Cell 1  2  3  4  5");
+
+		// correct spacing of maze from left edge
+		out.print(LEFT_JUSTIFY);
+
+		// print entry or exit indicator for first line
+		for(int i = BEGGINNING_OF_FIRST_LINE; i <= END_OF_FIRST_LINE; i++) {
+			if(this.mazeNodes.get(i).isEntry)
+				out.print(" E ");
+			else if(this.mazeNodes.get(i).isExit)
+				out.print(" X ");
 			else
 				out.print("___");
 		}
 		out.println();
 
+		// print walls for the maze
 		for(GraphNode node : this.mazeNodes) {
-			
-//			if(node.id == 1 || node.id == 6)
-//				out.print(node.id + "   ");
-//			else if(node.id == 11 || node.id == 16)
-//				out.print(node.id + "  ");
 
-//			boolean isFirstOrLastRow = (node.id >= 1 || node.id <= 5) || (node.id >= 16 || node.id <= 20);
+			// print cell numbers down left side of maze
+			if(node.id == 1 || node.id == 6)
+				out.print(node.id + " ");
+			else if(node.id == 11 || node.id == 16)
+				out.print(node.id);
+
 			boolean isLastRow = node.id >= 16 && node.id <= 20;
 			boolean isEntryOrExit = node.isEntry || node.isExit;
-			boolean isLeftOuterEdge = node.id == 6 || node.id == 11; 
-//			boolean isRightOuterEdge = node.id == 10 || node.id == 15;
+			boolean isLeftOuterEdge = node.id == 6 || node.id == 11;
 
-//			boolean upChild = true;
 			boolean downChild = false;
 			boolean leftChild = false;
-//			boolean rightChild = true;
 
-			//			
-			//			if(isFirstOrLastRow && isEntryOrExit)
-			//				out.print(" ");
-			//			else
-			//				out.print("_");
+			// draw left edge of maze			
+			if(node.isEntry && (node.id == 6 || node.id == 11))
+				out.print(" E");
+			else if(node.isExit && (node.id == 6 || node.id == 11))
+				out.print(" X");
+			else if(node.id == 1 || node.id == 6 || node.id == 11 || node.id == 16)
+				out.print("  ");
 
-			//			if(node.id == 1) {
+			// set which walls to draw
 			for(GraphNode child : node.children) {
-//				if(child.id == node.id + 1 || isRightOuterEdge && isEntryOrExit)
-//					rightChild = true;
-				if(child.id == node.id + 5 || (isLastRow  && isEntryOrExit))
+				if(child.id == node.id + 5 || isLastRow  && isEntryOrExit)
 					downChild = true;
 				if(child.id == node.id - 1 || isLeftOuterEdge && isEntryOrExit)
 					leftChild = true;
-//				if(child.id == node.id - 5)
-//					upChild = true;
-				//				}
 			}
-//ENTRY and EXIT INDICATOR
-//			if(node.isEntry)
-//				out.print(" E ");
-//			else if(node.isExit)
-//				out.print(" X ");
-//			else
-//ENTRY and EXIT INDICATOR			
-			
+
+			// print the cell with it's walls
 			if(downChild && leftChild)
 				out.print("   ");
 			else if(!downChild && leftChild)
 				out.print("___");
 			else if(downChild && !leftChild)
 				out.print("|  ");
-//			else if(downChild && leftChild)
-//				out.print("  |");
 			else if(!downChild && !leftChild)
 				out.print("|__");
-//			else if(!downChild && leftChild)
-//				out.print("__|");
-//			else if(!downChild && !leftChild)
-//				out.print("|_|");
-//			else if(downChild && !leftChild)
-//				out.print("| |");
-			
-//			if(upChild && downChild && leftChild && rightChild)
-//				out.print("   ");
-//			else if(upChild && !downChild && leftChild && rightChild)
-//				out.print("___");
-//			else if(upChild && downChild && !leftChild && rightChild)
-//				out.print("|  ");
-//			else if(upChild && downChild && leftChild && !rightChild)
-//				out.print("  |");
-//			else if(upChild && !downChild && !leftChild && rightChild)
-//				out.print("|__");
-//			else if(upChild && !downChild && leftChild && !rightChild)
-//				out.print("__|");
-//			else if(upChild && !downChild && !leftChild && !rightChild)
-//				out.print("|_|");
-//			else if(upChild && downChild && !leftChild && !rightChild)
-//				out.print("| |");
 
+			// draw right edge of maze
+			if(node.isEntry && (node.id == 10 || node.id == 15))
+				out.println(" E ");
+			else if(node.isExit && (node.id == 10 || node.id == 15))
+				out.println(" X ");
+			else if(node.id == 5 || node.id == 10 || node.id == 15 || node.id == 20)
+				out.println("|");
+		}
 
-//			if(isOuterEdge && isEntryOrExit)
-//				out.print(" ");
-//			else if(isOuterEdge)
-//				out.print("|");
-			
-//			if(node.id == 5 || node.id == 10 || node.id == 15 || node.id == 20) {
-//				if(isEntryOrExit)
-//					out.println();
-//				else
-//					out.println("|");
-////				out.print(node.id + 1);
-//			}
-			
-			if(node.id == 5 || node.id == 10 || node.id == 15 || node.id == 20) {
-				if(isEntryOrExit && (node.id == 10 || node.id == 15))
-					out.println();
-				else
-					out.println("|");
-//				out.print(node.id + 1);
-			}
-				
+		// correct spacing from left edge
+		out.print(LEFT_JUSTIFY);
+		
+		// print entry and exits for last line
+		for(int i = BEGGINNING_OF_LAST_LINE; i <= END_OF_LAST_LINE; i++) {
+			if(this.mazeNodes.get(i).isEntry)
+				out.print(" E ");
+			else if(this.mazeNodes.get(i).isExit)
+				out.print(" X ");
+			else
+				out.print("   ");
 		}
 		out.println();
 	}
 
 	private void connect(List<GraphNode>nodes, int node1, int node2) {
+		// connect nodes specified if they are not already connected
 		if(!nodes.get(node1 - 1).children.contains(nodes.get(node2 - 1))) {
 			nodes.get(node1 - 1).children.add(nodes.get(node2 - 1));
 			nodes.get(node2 - 1).children.add(nodes.get(node1 - 1));
 		}
 	}
 
-	public void solve() {
-		List<GraphNode> visiGraphNodes = new ArrayList<>();
-		List<GraphNode> path = new ArrayList<>();
-		List<List<GraphNode>> paths = new ArrayList<>();
+	public List<List<GraphNode>> solve() {
+		// prep for findExits
+		List<GraphNode> visitedGraphNodes = new ArrayList<>();
+		List<GraphNode> pathToExit = new ArrayList<>();
+		List<List<GraphNode>> allPaths = new ArrayList<>();
 
 		GraphNode mazeEntry = null;
 		for(GraphNode node : this.mazeNodes)
 			if(node.isEntry)
 				mazeEntry = node;
 
-		findExits(mazeEntry, visiGraphNodes, path, paths);
+		findExits(mazeEntry, visitedGraphNodes, pathToExit, allPaths);
+		return allPaths;
 	}
 
-	private void findExits(GraphNode node, List<GraphNode> visitedGraphNodes, List<GraphNode> path, List<List<GraphNode>> paths) {
+	private void findExits(GraphNode node, List<GraphNode> visitedGraphNodes, List<GraphNode> pathToExit, List<List<GraphNode>> allPaths) {
+		// recurse through maze starting at node
 		visitedGraphNodes.add(node);
-		path.add(node);
+		pathToExit.add(node);
 
 		if(node.isExit) {
-			out.print("Exit found! ");
-			out.print("Path to exit: ");
-			for(GraphNode pathNode : path)
-				out.print(pathNode.id + " ");
-			out.println();
+			allPaths.add(new ArrayList<>(pathToExit));
 		}
 
 		for(GraphNode child : node.children)
 			if(!visitedGraphNodes.contains(child))
-				findExits(child, visitedGraphNodes, path, paths);
+				findExits(child, visitedGraphNodes, pathToExit, allPaths);
 
-		path.remove(path.size() - 1);
+		// if we arrive here we did not find the exit, remove this node from pathToExit
+		pathToExit.remove(pathToExit.size() - 1);
 	}
 }
 
@@ -369,9 +262,30 @@ public class MazeTester {
 
 	public static void main(String[] args) {
 
-		Maze maze = new Maze(java.lang.System.currentTimeMillis());
-//		Maze maze = new Maze();
-		maze.print();
-		maze.solve();
+		out.println("Maze from textbook:");
+		Maze mazeFromBook = new Maze();
+		mazeFromBook.print();
+		printResults(mazeFromBook.solve());		
+
+		out.println("Randomized maze:");
+		Maze randomMaze = new Maze(java.lang.System.currentTimeMillis());
+		randomMaze.print();
+		printResults(randomMaze.solve());
+	}
+
+	public static void printResults(List<List<GraphNode>> results) {
+		// print paths from results
+		if(results.size() > 0) {
+			for(List<GraphNode> path : results) {
+				out.print("Exit found! ");
+				out.print("Path to exit: ");
+				for(GraphNode pathNode : path)
+					out.print(pathNode.id + " ");
+				out.println();
+			}
+		}
+		else
+			out.println("No path to exit...");
+		out.println();
 	}
 }
