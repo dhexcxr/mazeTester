@@ -1,13 +1,11 @@
-//ver 0.9
-// with random entrances and exits in stock maze from book
+//ver 0.99
+// with random mazes, but no ui
 
 package mazeTester;
 
 import static java.lang.System.out;
-
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -91,32 +89,125 @@ class Maze {
 				exit = random.nextInt(validEntryAndExit.size() - 1);
 			mazeNodes.get(validEntryAndExit.get(exit)).isExit = true;
 		}
+		
+		for(int i = 0; i < 20; i++) {
+			final int CHILDREN_VARIATIONS = 16;
+			int nodeToConnect = random.nextInt(mazeNodes.size())+1;		// random 1-20
+			int childrenMask = random.nextInt(CHILDREN_VARIATIONS);		// 0-15
+			boolean isTop = nodeToConnect >= 1 && nodeToConnect <=5;
+			boolean isBottom = nodeToConnect >= 16 && nodeToConnect <=20;
+			boolean isLeft = nodeToConnect == 1 || nodeToConnect == 6 || nodeToConnect == 11 || nodeToConnect == 16;
+			boolean isRight = 	nodeToConnect == 5 || nodeToConnect == 10 || nodeToConnect == 15 || nodeToConnect == 20;
+			
+			if(isTop)
+				childrenMask = childrenMask & 14;
+			if(isBottom)
+				childrenMask = childrenMask & 13;
+			if(isLeft)
+				childrenMask = childrenMask & 11;
+			if(isRight)
+				childrenMask = childrenMask & 7;
+			
+			switch (childrenMask) {
+			case 0:
+				break;
+			case 1:
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
+				break;
+			case 2:
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
+				break;
+			case 3:
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
+				break;
+			case 4:
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
+				break;
+			case 5:
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
+				break;
+			case 6:
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
+				break;
+			case 7:
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
+				break;
+			case 8:
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
+				break;
+			case 9:
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
+				break;
+			case 10:
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
+				break;
+			case 11:
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
+				break;
+			case 12:
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
+				break;
+			case 13:
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
+				break;
+			case 14:
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
+				break;
+			case 15:
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 5);
+				connect(mazeNodes, nodeToConnect, nodeToConnect - 1);
+				connect(mazeNodes, nodeToConnect, nodeToConnect + 1);
+				break;
+			default:
+				throw new IllegalArgumentException("Unexpected value: " + childrenMask);
+			}
+		}
 
-		connect(mazeNodes, 1, 2);
-		connect(mazeNodes, 2, 3);
-		connect(mazeNodes, 3, 4);
-		connect(mazeNodes, 4, 5);
-		connect(mazeNodes, 1, 6);
-		connect(mazeNodes, 3, 8);
-		connect(mazeNodes, 4, 9);
-		connect(mazeNodes, 7, 8);
-		connect(mazeNodes, 6, 11);
-		connect(mazeNodes, 7, 12);
-		connect(mazeNodes, 9, 14);
-		connect(mazeNodes, 10, 15);
-		connect(mazeNodes, 11, 12);
-		connect(mazeNodes, 14, 15);
-		connect(mazeNodes, 13, 18);
-		connect(mazeNodes, 15, 20);
-		connect(mazeNodes, 16, 17);
-		connect(mazeNodes, 17, 18);
-		connect(mazeNodes, 18, 19);
-		connect(mazeNodes, 19, 20);
+//		connect(mazeNodes, 1, 2);
+//		connect(mazeNodes, 2, 3);
+//		connect(mazeNodes, 3, 4);
+//		connect(mazeNodes, 4, 5);
+//		connect(mazeNodes, 1, 6);
+//		connect(mazeNodes, 3, 8);
+//		connect(mazeNodes, 4, 9);
+//		connect(mazeNodes, 7, 8);
+//		connect(mazeNodes, 6, 11);
+//		connect(mazeNodes, 7, 12);
+//		connect(mazeNodes, 9, 14);
+//		connect(mazeNodes, 10, 15);
+//		connect(mazeNodes, 11, 12);
+//		connect(mazeNodes, 14, 15);
+//		connect(mazeNodes, 13, 18);
+//		connect(mazeNodes, 15, 20);
+//		connect(mazeNodes, 16, 17);
+//		connect(mazeNodes, 17, 18);
+//		connect(mazeNodes, 18, 19);
+//		connect(mazeNodes, 19, 20);
 
 	}
 
 	public void print() {
-		out.print(" 1  2  3  4  5\n");
+	
+//ENTRY and EXIT INDICATOR
+//		out.println("E is maze entry.\nX is maze exit.");
+//		out.print(" 1  2  3  4  5\n");
+//ENTRY and EXIT INDICATOR
+		
 		for(int i = 0; i < 5; i++) {
 			//			boolean isFirstRow = (this.mazeNodes.get(i).id >= 1 || this.mazeNodes.get(i).id <= 5);
 			boolean isEntryOrExit = this.mazeNodes.get(i).isEntry || this.mazeNodes.get(i).isExit;
@@ -166,7 +257,13 @@ class Maze {
 //					upChild = true;
 				//				}
 			}
-
+//ENTRY and EXIT INDICATOR
+//			if(node.isEntry)
+//				out.print(" E ");
+//			else if(node.isExit)
+//				out.print(" X ");
+//			else
+//ENTRY and EXIT INDICATOR			
 			
 			if(downChild && leftChild)
 				out.print("   ");
@@ -174,16 +271,16 @@ class Maze {
 				out.print("___");
 			else if(downChild && !leftChild)
 				out.print("|  ");
-			else if(downChild && leftChild)
-				out.print("  |");
+//			else if(downChild && leftChild)
+//				out.print("  |");
 			else if(!downChild && !leftChild)
 				out.print("|__");
-			else if(!downChild && leftChild)
-				out.print("__|");
-			else if(!downChild && !leftChild)
-				out.print("|_|");
-			else if(downChild && !leftChild)
-				out.print("| |");
+//			else if(!downChild && leftChild)
+//				out.print("__|");
+//			else if(!downChild && !leftChild)
+//				out.print("|_|");
+//			else if(downChild && !leftChild)
+//				out.print("| |");
 			
 //			if(upChild && downChild && leftChild && rightChild)
 //				out.print("   ");
@@ -208,8 +305,16 @@ class Maze {
 //			else if(isOuterEdge)
 //				out.print("|");
 			
+//			if(node.id == 5 || node.id == 10 || node.id == 15 || node.id == 20) {
+//				if(isEntryOrExit)
+//					out.println();
+//				else
+//					out.println("|");
+////				out.print(node.id + 1);
+//			}
+			
 			if(node.id == 5 || node.id == 10 || node.id == 15 || node.id == 20) {
-				if(isEntryOrExit)
+				if(isEntryOrExit && (node.id == 10 || node.id == 15))
 					out.println();
 				else
 					out.println("|");
